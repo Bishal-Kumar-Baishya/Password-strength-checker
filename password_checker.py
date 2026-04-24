@@ -1,5 +1,8 @@
 import string
 import re
+import argparse
+
+parser = argparse.ArgumentParser()
 
 def check_strength(password, common_password):
     score = 0
@@ -30,23 +33,57 @@ def get_rating(score):
     
 def load_common_passwords(path):
     password = []
-    with open(path, "r") as f:
-        for line in f:
-            password.append(line.strip())
-    return password
+    
+    try:
+        with open(path, "r") as f:
+            for line in f:
+                password.append(line.strip())
+        return password
+    except FileNotFoundError:
+        print(f"ERROR: {path} not found")
+        return []
+
+def get_feedback(password):
+    feedback = []
+
+    if len(password) < 8:
+        feedback.append("Too short - use 8+ characters")
+    if not any(char in string.ascii_uppercase for char in password):
+        feedback.append("Missing uppercase letters")
+    if not any(char in string.ascii_lowercase for char in password):
+        feedback.append("Missing lowercase letters")
+    if not any(char in string.digits for char in password):
+        feedback.append("Missing digits")
+    if not any(char in string.punctuation for char in password):
+        feedback.append("Missing special characters")
+    return feedback
+
 
 
 def main():
-    password = input("Enter a password: ")
+    parser.add_argument("--password")
+    args = parser.parse_args()
+    
+    if args.password is None:
+        print("Error: please provide a password using --password")
+        return
+    
     cmnPassword = load_common_passwords("common_passwords.txt")
-    score = check_strength(password, cmnPassword)
+    score = check_strength(args.password, cmnPassword)
+
     if score == "common":
         print("Your password is very common, and is present in common password file\n")
+
     elif score == "repeated":
         print("Password has repeated characters - too weak")
+
     else:
         result = get_rating(score)
         print(f"Password is {result} and score is {score}")
+        if result != "Strong":
+            feedback = get_feedback(args.password)
+            for msg in feedback:
+                print(msg)
 
 if __name__ == "__main__":
     main()
